@@ -1,11 +1,12 @@
-/* Run Wheels Forward and Backward
- */
+/* Run Wheels Forward and Backward */
+
+/*MOTOR SPEED PRE-SETS*/
  const int RSPD1 = 180;        //Right Wheel PWM
  const int LSPD1 = 180;        //Left Wheel PWM
  const int RSPD2 = 175;        //Right Wheel PWM
  const int LSPD2 = 175;        //Left Wheel PWM
 
- 
+ /*MOTOR PINS*/
  const int LWhFwdPin = 7;
  const int LWhBwdPin = 5;
  const int LWhPWMPin = 6;
@@ -17,6 +18,8 @@
 
 void setup() 
 {
+
+  /*MOTOR SET UP*/
   pinMode(LWhFwdPin,OUTPUT);
   pinMode(LWhBwdPin,OUTPUT);
   pinMode(LWhPWMPin,OUTPUT);
