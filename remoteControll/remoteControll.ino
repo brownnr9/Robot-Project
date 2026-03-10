@@ -4,7 +4,7 @@
      */
 
 /*  NOTE: DON'T USE PIN 3 OR 11 FOR PULSE MODULATION */
-/*  NOTE DON'T USE PIN 0 */
+/*  NOTE DON'T USE PIN 0 OR 1 FOR PULSE MODULATION */
 
 /* Variables for finite state machine*/
   int ir_code;
