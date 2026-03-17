@@ -11,17 +11,17 @@
 Pin Map:
   0
   1
-  2 - Right Wheel Backward
-  3 - Right Wheel Encoder
+  2 - 
+  3 
   4 - Right Wheel Forward
   5 - Left Wheel Backward
   6 - Left Wheel Power
   7 - Left Wheel Forward
   8 
   9 - Right Wheel Power
-  10
-  11  - Left Wheel Encoder
-  12
+  10  - Right Wheel Backward
+  11 
+  12  - Right Wheel Encoder
   13
 */
 
@@ -46,7 +46,7 @@ Pin Map:
  const int LWhPWMPin = 6;
 
  const int RWhFwdPin = 4;
- const int RWhBwdPin = 2;
+ const int RWhBwdPin = 10;
  const int RWhPWMPin = 9; 
 
 
@@ -91,8 +91,8 @@ void setup()
   IrReceiver.begin(IR_Pin, ENABLE_LED_FEEDBACK); // Start the receiver
 
   /*  WHEEL ENCODER SET UP  */
-  attachInterrupt(digitalPinToInterrupt(10), leftWhlCnt, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(12), rightWhlCnt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(2), leftWhlCnt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(3), rightWhlCnt, CHANGE);
 
   cntrR = 0;
   cntrL = 0;
@@ -197,6 +197,11 @@ void loop()
 
   }
 
+
+Serial.print("L_Cnt:"); Serial.print(tmpLcntr); 
+Serial.print(" | R_Cnt:"); Serial.print(tmpRcntr);
+Serial.print(" | L_PWM:"); Serial.print(LSPD);
+Serial.print(" | R_PWM:"); Serial.println(RSPD);
   delay(50);
 }
 
