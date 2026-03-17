@@ -37,7 +37,7 @@ Pin Map:
  //const int RSPD1 = 170;        //Right Wheel PWM
  //const int LSPD1 = 180;        //Left Wheel PWM
 
- const int RSPD2 = 120;        //Right Wheel PWM
+ const int RSPD2 = 110;        //Right Wheel PWM
  const int LSPD2 = 130;        //Left Wheel PWM
 
  /*MOTOR PINS*/
@@ -135,9 +135,7 @@ void loop()
 
 
 /* IR SENSOR CONTROL SYSTEM (FSM)*/
-  if (IrReceiver.decode())
-  {
-    ir_code = IrReceiver.decodedIRData.command;
+ `
     Serial.println(ir_code);
     IrReceiver.resume(); // Enable receiving of the next value
 
@@ -207,6 +205,7 @@ Serial.print(" | R_PWM:"); Serial.println(RSPD);
 
 
 
+/*  INTERUPT FUNCTIONS  */
 void leftWhlCnt()
 {
   long intTime = micros();
