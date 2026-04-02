@@ -135,7 +135,7 @@ void loop()
 
 
 /* IR SENSOR CONTROL SYSTEM (FSM)*/
- `
+
     Serial.println(ir_code);
     IrReceiver.resume(); // Enable receiving of the next value
 
@@ -161,7 +161,7 @@ void loop()
         break;
 
     }
-  }
+  
 
   /* CHANGE SIGNAL DEPENDING ON STATE*/
   switch (state)
@@ -225,4 +225,3 @@ void rightWhlCnt()
     cntrR++;
   }
 }
-
