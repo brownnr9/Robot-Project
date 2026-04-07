@@ -58,9 +58,6 @@ Pin Map:
  const int RWhBwdPin = 10;
  const int RWhPWMPin = 9; 
 
- boolean leftFwd = true;
- boolean rightFwd = true;
-
 
 /* IR SET UP */
 #define DECODE_NEC
@@ -229,8 +226,6 @@ void loop()
       break; 
 
     case 1:   //FWD
-      leftFwd = true;
-      rightFwd = true; 
 
       //NOTE: 4 INCHES IS ~100MM BUT ROVER DOES NOT STOP QUICK ENEUGH
       if(measure.RangeStatus != 4 && measure.RangeMilliMeter <=200)
@@ -257,8 +252,6 @@ void loop()
       break;
 
     case 2:   //BWD
-      leftFwd = false;
-      rightFwd = false; 
 
       digitalWrite(LWhFwdPin,LOW);    //forward signals -> low
       digitalWrite(RWhFwdPin,LOW);   
@@ -279,8 +272,6 @@ void loop()
       //NOTE A 90 DEGREE TURN SHOULD BE ~40 PULSES BUT ROVER DOSNT STOP QUICK ENEUGH
       if(tmpLcntr < tmpRcntr + 25)
       {
-        leftFwd = true;
-        rightFwd = false;
 
         digitalWrite(LWhBwdPin,LOW);    //RIGHT WHEEL GOES BACKWARDS
         digitalWrite(RWhBwdPin,HIGH);   
@@ -300,9 +291,6 @@ void loop()
           delay(250);
 
         /*  go forward for 1 second and stop  */
-        
-        leftFwd = true;
-        rightFwd = true; 
 
         digitalWrite(LWhBwdPin,LOW);    //backward signals -> low
         digitalWrite(RWhBwdPin,LOW);   
@@ -339,14 +327,7 @@ void leftWhlCnt()
   if(intTime > LIntTime + 1000L)
   {
     LIntTime = intTime;
-    if(leftFwd)   // WHEEL MOVES FORWARD = +
-    {
-      cntrL++;
-    }
-    else          // WHEEL MOVES BACKWARDS = -
-    {
-      cntrL--;
-    }
+    cntrL++;
   }
 }
 
@@ -356,13 +337,13 @@ void rightWhlCnt()
   if(intTime > RIntTime + 1000L)
   {
     RIntTime = intTime;
-    if(rightFwd)
+    if(state==3)    //need to incroment backewards for turn in place
     {
-      cntrR++;
+      cntrR--;
     }
     else
     {
-      cntrR--;
+      cntrR++;
     }
   }
 }
