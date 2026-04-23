@@ -14,15 +14,15 @@ Pin Map:
   0
   1
   2 - Left Wheen Encoder
-  3  - Right Wheel Encoder
-  4 - Right Wheel Forward
-  5 - Left Wheel Backward
-  6 - Left Wheel Power
-  7 - Left Wheel Forward
-  8 - IR Senser
-  9 - Right Wheel Power
-  10  - Right Wheel Backward
-  11 
+  ~3  - Right Wheel Encoder
+  4 - Left wheel forward
+  ~5 - Left Wheel Power (ENA)
+  ~6 - Right wheel power (ENB)
+  7 - Left wheel backwar
+  8 - Right wheel forward
+  9 - Right wheel backward
+  ~10  IR reciever  ;
+  ~11 
   12 - echo (ultrasonic sensor)
   13 - trig (ultrasonic sensor)
 
@@ -57,19 +57,19 @@ Pin Map:
  const int LSPD2 = 130;        //Left Wheel PWM
 
  /*MOTOR PINS*/
- const int LWhFwdPin = 7;
- const int LWhBwdPin = 5;
- const int LWhPWMPin = 6;
+ const int LWhFwdPin = 4;
+ const int LWhBwdPin = 7;
+ const int LWhPWMPin = 5;
 
- const int RWhFwdPin = 4;
- const int RWhBwdPin = 10;
- const int RWhPWMPin = 9; 
+ const int RWhFwdPin = 8;
+ const int RWhBwdPin = 9;
+ const int RWhPWMPin = 6; 
 
 
 /* IR SET UP */
 #define DECODE_NEC
 #include <IRremote.hpp>
-#define IR_Pin 8
+#define IR_Pin 10
 
 /*  P-CONTROLLER SET UP  */
  int gain=8;
