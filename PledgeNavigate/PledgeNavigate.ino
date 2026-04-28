@@ -78,6 +78,11 @@ Pin Map:
  volatile long LIntTime, RIntTime;
  long stopTime;
 
+/*  CONTROLLER FOR WALL */
+int targetDistance = 150; // Target distance from wall in mm
+float wallGain = 0.25;      // How much the wall distance affects steering
+int wallError = 0;       // Calculated correction
+
 /*  LCD SET UP  */
 #include <Wire.h> // Library for I2C communication
 #include <LiquidCrystal_I2C.h> // Library for LCD
@@ -204,6 +209,12 @@ void loop()
   
 
   /*  P- CONTROLL SYSTEM  */
+
+  wallError = measureUltra - targetDistance;
+
+  // This correction value determines how much to deviate from driving straight
+  int wallCorrection = int(wallError * wallGain);
+
   int RSPD = RSPD2;   // RIGHT AND LEFT SPEED VARIABLES CHANGE BASED ON P-CONTROLL AND CONSTANT SPEED VALUES
   int LSPD = LSPD2;   
   long tmpLcntr, tmpRcntr;    //snapshot of the cntrL and cntrR value
@@ -212,26 +223,12 @@ void loop()
   tmpRcntr = cntrR;
   interrupts();
   
-  delCntr = abs(tmpLcntr - tmpRcntr);   // The error is wheel speed
+  int encoderError = tmpLcntr - tmpRcntr; 
+  int encoderAdjustment = encoderError * gain;
 
   /*  Calculate speed (P-Controller)  */
-  if(tmpLcntr > tmpRcntr) // LEFT WHEEL IS SPINNING TOO FAST
-  {
-    RSPD = RSPD2; 
-    LSPD = max(LSPD2 - int(gain *  delCntr + 0.5),0);
-    /*  Adjusts using: LSPD - (gain * delCntr)
-          int(... + 0.5) is to round to the nearest whole number
-          max(... , 0) is to prevent the speed from going negative (max function returns highest value parameter) */
-  }
-  else if(tmpRcntr > tmpLcntr) // RIGHT WHEEL IS SPINNING TOO FAST
-  {
-    RSPD = max(RSPD2 - int(gain *  delCntr + 0.5),0); 
-    LSPD = LSPD2;
-  }
-
-
-  /*  In  */
-
+  LSPD = LSPD2 + wallCorrection - encoderAdjustment;
+  RSPD = RSPD2 - wallCorrection + encoderAdjustment;
 
 
 /* IR SENSOR CONTROL SYSTEM (FSM)*/
@@ -280,6 +277,7 @@ void loop()
       else if(measureUltra > 200)
       {
         state = 4;
+          delay(1000);
           stop();
           delay(250);
 
