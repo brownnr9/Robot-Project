@@ -23,8 +23,8 @@ Pin Map:
   9 - Right wheel backward
   ~10  IR reciever  ;
   ~11 
-  12 - echo (ultrasonic sensor)
-  13 - trig (ultrasonic sensor)
+  12 - trig (ultrasonic sensor)
+  13 - echo (ultrasonic sensor)
 
   A0 - Servo motor (analog pin used as a digital pin)
   A1
@@ -88,8 +88,8 @@ LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 20, 4);
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 // Ultrasonic distance sensor
-const int pingPin = 13;
-const int echoPin = 12;
+const int pingPin = 12;
+const int echoPin = 13;
 //NOTE ADD ASSIGNMENT
 
 
@@ -115,7 +115,7 @@ long ultra() {
   long cm = duration * 0.0343 / 2;
   long mm = cm*10;
 
-  if (cm <= 0 || cm > 500) return 500;
+  //if (cm <= 0 || cm > 500) return 500;
   return mm; 
 }
 
@@ -195,8 +195,11 @@ void loop()
   if (measureIR.RangeStatus != 4) {  // phase failures have incorrect data
   
       lcd.setCursor(2, 0); // Set the cursor on the third column and first row.
-      lcd.print(measureIR.RangeMilliMeter / 25.4, 2); // Print the distance in inches
-      lcd.print(" in   ");
+      lcd.print(measureIR.RangeMilliMeter); // Print the distance in inches
+      lcd.print(" mm     ");
+      lcd.setCursor(2,1);
+      lcd.print(measureUltra);
+      lcd.print(" mm    ");
   }
   
 
@@ -225,6 +228,9 @@ void loop()
     RSPD = max(RSPD2 - int(gain *  delCntr + 0.5),0); 
     LSPD = LSPD2;
   }
+
+
+  /*  In  */
 
 
 
@@ -260,7 +266,7 @@ void loop()
       //NOTE: 4 INCHES IS ~100MM BUT ROVER DOES NOT STOP QUICK ENEUGH
 
       // 2 cases are right corner and no more wall
-      /*
+      
       if(measureIR.RangeStatus != 4 && measureIR.RangeMilliMeter <=200 && measureUltra <= 200)
         {//corner right case -> needs to turn left
           state = 3;
@@ -280,7 +286,8 @@ void loop()
           cntrL = 0; 
           cntrR = 0;
           break;
-      }*/
+      }
+      
 
       digitalWrite(LWhBwdPin,LOW);    //backward signals -> low
       digitalWrite(RWhBwdPin,LOW);   
@@ -319,8 +326,8 @@ void loop()
           digitalWrite(RWhFwdPin,HIGH);    //right wheel fwd
           digitalWrite(RWhBwdPin,LOW);    
 
-          analogWrite(RWhPWMPin,130);
-          analogWrite(LWhPWMPin,130);
+          analogWrite(RWhPWMPin,RSPD);
+          analogWrite(LWhPWMPin,LSPD);
         }
         stop();
         Lturn = false;
@@ -365,6 +372,7 @@ void loop()
         Rturn = false;
 
         heading = heading -1;
+        break;
         }
         
   }
