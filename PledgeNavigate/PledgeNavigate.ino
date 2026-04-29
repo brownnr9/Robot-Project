@@ -51,7 +51,7 @@ Pin Map:
  //const int RSPD1 = 170;        //Right Wheel PWM
  //const int LSPD1 = 180;        //Left Wheel PWM
 
- const int RSPD2 = 140;        //Right Wheel PWM
+ const int RSPD2 = 160;        //Right Wheel PWM
  const int LSPD2 = 150;        //Left Wheel PWM
 
  int LSPD;
@@ -346,7 +346,7 @@ void loop()
           turnLeft();
         }
         stop();
-        delay(500);
+        delay(1000);
         state = 1;
         cntrL = 0;
         cntrR = 0;
@@ -374,7 +374,7 @@ void loop()
         turnRight();
       }
       stop();
-      delay(500);
+      delay(1000);
       cntrL = 0;
       cntrR = 0;
 
