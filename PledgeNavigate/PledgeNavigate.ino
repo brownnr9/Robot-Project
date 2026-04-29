@@ -51,8 +51,12 @@ Pin Map:
  //const int RSPD1 = 170;        //Right Wheel PWM
  //const int LSPD1 = 180;        //Left Wheel PWM
 
- const int RSPD2 = 130;        //Right Wheel PWM
+ const int RSPD2 = 140;        //Right Wheel PWM
  const int LSPD2 = 150;        //Left Wheel PWM
+
+ int LSPD;
+ int RSPD;
+   long tmpLcntr, tmpRcntr;    //snapshot of the cntrL and cntrR value
 
  /*MOTOR PINS*/
  const int LWhFwdPin = 4;
@@ -76,9 +80,6 @@ Pin Map:
  volatile long LIntTime, RIntTime;
  long stopTime;
 
- /*   Wall following    */
- long d1, d2;
- long deltaWall = 0;
 
 /*  LCD SET UP  */
 #include <Wire.h> // Library for I2C communication
@@ -102,6 +103,12 @@ const int echoPin = 13;
 Servo myservo;  // create Servo object to control a servo
 int pos = 90;    // variable to store the servo position
 */
+
+/*  wall following variables  */
+
+long d1, d2;
+int ticksPerRTurn = 35;
+int ticksPerLTurn = 35;
 
 
 // ===== ULTRASONIC =====
@@ -206,45 +213,6 @@ void loop()
       lcd.print(" mm    ");
   }
   
-  /*
-  if(cntrL > 100 || cntrR > 100){
-    d2 = measureUltra;
-    deltaWall = d2 - d1;
-
-
-    cntrL = 0;
-    cntrR = 0;
-  }
-  */
-
-  /*  P- CONTROLL SYSTEM  */
-  int RSPD = RSPD2;   // RIGHT AND LEFT SPEED VARIABLES CHANGE BASED ON P-CONTROLL AND CONSTANT SPEED VALUES
-  int LSPD = LSPD2;   
-  long tmpLcntr, tmpRcntr;    //snapshot of the cntrL and cntrR value
-  noInterrupts();
-  tmpLcntr = cntrL;
-  tmpRcntr = cntrR;
-  interrupts();
-  
-  delCntr = abs(tmpLcntr - tmpRcntr);   // The error is wheel speed
-
-  /*  Calculate speed (P-Controller)  */
-  if(tmpLcntr > tmpRcntr) // LEFT WHEEL IS SPINNING TOO FAST
-  {
-    RSPD = RSPD2; 
-    LSPD = max(LSPD2 - int(gain *  delCntr + 0.5),0);
-    /*  Adjusts using: LSPD - (gain * delCntr)
-          int(... + 0.5) is to round to the nearest whole number
-          max(... , 0) is to prevent the speed from going negative (max function returns highest value parameter) */
-  }
-  else if(tmpRcntr > tmpLcntr) // RIGHT WHEEL IS SPINNING TOO FAST
-  {
-    RSPD = max(RSPD2 - int(gain *  delCntr + 0.5),0); 
-    LSPD = LSPD2;
-  }
-
-
-  /*  In  */
 
 
 
@@ -277,10 +245,57 @@ void loop()
 
     case 1:   //FWD
 
-      //NOTE: 4 INCHES IS ~100MM BUT ROVER DOES NOT STOP QUICK ENEUGH
-
+      moveFwd();
       // 2 cases are right corner and no more wall
-      
+
+      if(cntrL > 60 || cntrR >60){    //every 60 ticks -> 314 mm
+        stop();
+        d2 = ultra();   //measure the distance from wall
+        delay(500);
+
+        cntrL = 0;
+        cntrR = 0;
+        
+        float dx = abs(d1-d2);
+        float theta = asin(constrain(dx/314.0, -1, 1)); //angle to turn
+
+        if(d1 > d2) //robot is moving towards the wall
+        {
+          int toTurn = 2 * theta * ticksPerRTurn / PI;
+
+          while(cntrR < toTurn)
+          {
+            turnLeft();
+          }
+          stop();
+          delay(1000);
+
+
+        
+        }
+        else if(d1 < d2)  //moving away from the wall
+        {
+          int toTurn = 2 * theta * ticksPerLTurn / PI;
+
+          while(cntrL< toTurn)
+          {
+            turnRight();
+          }
+          stop();
+          delay(1000);
+
+        }
+
+
+        cntrL = 0;
+        cntrR = 0;
+        d1 = ultra();
+
+
+
+
+      }
+
       if(measureIR.RangeStatus != 4 && measureIR.RangeMilliMeter <=300 && measureUltra <= 400)
         {//corner right case -> needs to turn left
           state = 3;
@@ -327,15 +342,17 @@ void loop()
     case 3: //CORNER RIGHT PROTOCALL
     //LEFFT TURN
 
-        while(cntrR < 40){
+        while(cntrR < ticksPerLTurn){
           turnLeft();
         }
         stop();
+        delay(500);
         state = 1;
         cntrL = 0;
         cntrR = 0;
+        d1 = ultra();
 
-        heading = heading +1;
+        heading = heading -1;
         break;
 
 
@@ -345,32 +362,37 @@ void loop()
       {
         moveFwd();
       }
+      stop();
+      delay(500);
       state = 1;
       break;
     }
     else
     {   //RIGHT TURN
-      while(cntrL < 40)
+      while(cntrL < ticksPerRTurn)
       {
         turnRight();
       }
-
+      stop();
+      delay(500);
       cntrL = 0;
       cntrR = 0;
 
-      while(cntrL < 40 && cntrR < 40)
+      while(cntrL < 60 && cntrR < 60)
       {
         moveFwd();
       }
       
         stop();
+        delay(500);
 
       
         state = 1;
         cntrL = 0;
         cntrR = 0;
+        d1 = ultra();
 
-        heading = heading -1;
+        heading = heading +1;
         break;
         }
         
@@ -430,7 +452,7 @@ void turnRight()
       digitalWrite(RWhFwdPin,LOW);   
       digitalWrite(LWhBwdPin,LOW);    
       digitalWrite(RWhBwdPin,LOW); 
-      analogWrite(LWhPWMPin,130);
+      analogWrite(LWhPWMPin,LSPD2);
 
 }
 
@@ -440,15 +462,40 @@ void turnLeft()
       digitalWrite(RWhFwdPin,HIGH);   
       digitalWrite(LWhBwdPin,LOW);    
       digitalWrite(RWhBwdPin,LOW); 
-      analogWrite(RWhPWMPin,130);
+      analogWrite(RWhPWMPin,RSPD2);
 }
 
 void moveFwd()
 {
+  /*  P- CONTROLL SYSTEM  */
+  RSPD = RSPD2;   // RIGHT AND LEFT SPEED VARIABLES CHANGE BASED ON P-CONTROLL AND CONSTANT SPEED VALUES
+  LSPD = LSPD2;   
+  noInterrupts();
+  tmpLcntr = cntrL;
+  tmpRcntr = cntrR;
+  interrupts();
+  
+  delCntr = abs(tmpLcntr - tmpRcntr);   // The error is wheel speed
+
+  /*  Calculate speed (P-Controller)  */
+  if(tmpLcntr > tmpRcntr) // LEFT WHEEL IS SPINNING TOO FAST
+  {
+    RSPD = RSPD2; 
+    LSPD = max(LSPD2 - int(gain *  delCntr + 0.5),0);
+    /*  Adjusts using: LSPD - (gain * delCntr)
+          int(... + 0.5) is to round to the nearest whole number
+          max(... , 0) is to prevent the speed from going negative (max function returns highest value parameter) */
+  }
+  else if(tmpRcntr > tmpLcntr) // RIGHT WHEEL IS SPINNING TOO FAST
+  {
+    RSPD = max(RSPD2 - int(gain *  delCntr + 0.5),0); 
+    LSPD = LSPD2;
+  }
+
       digitalWrite(LWhFwdPin,HIGH);    //soft turn left
       digitalWrite(RWhFwdPin,HIGH);   
       digitalWrite(LWhBwdPin,LOW);    
       digitalWrite(RWhBwdPin,LOW); 
-      analogWrite(RWhPWMPin,130);
-      analogWrite(LWhPWMPin,130);
+      analogWrite(RWhPWMPin,RSPD);
+      analogWrite(LWhPWMPin,LSPD);
 }
