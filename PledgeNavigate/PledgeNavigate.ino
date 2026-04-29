@@ -46,15 +46,13 @@ Pin Map:
   0 = STOP
   1 = FWD
   2 = BWD */
-  bool Lturn = false;
-  bool Rturn = false;
 
 /*MOTOR SPEED PRE-SETS*/
  //const int RSPD1 = 170;        //Right Wheel PWM
  //const int LSPD1 = 180;        //Left Wheel PWM
 
- const int RSPD2 = 110;        //Right Wheel PWM
- const int LSPD2 = 130;        //Left Wheel PWM
+ const int RSPD2 = 130;        //Right Wheel PWM
+ const int LSPD2 = 150;        //Left Wheel PWM
 
  /*MOTOR PINS*/
  const int LWhFwdPin = 4;
@@ -78,10 +76,9 @@ Pin Map:
  volatile long LIntTime, RIntTime;
  long stopTime;
 
-/*  CONTROLLER FOR WALL */
-int targetDistance = 150; // Target distance from wall in mm
-float wallGain = 0.25;      // How much the wall distance affects steering
-int wallError = 0;       // Calculated correction
+ /*   Wall following    */
+ long d1, d2;
+ long deltaWall = 0;
 
 /*  LCD SET UP  */
 #include <Wire.h> // Library for I2C communication
@@ -187,6 +184,8 @@ void setup()
   analogWrite(LWhPWMPin,LSPD2);
   analogWrite(RWhPWMPin,RSPD2);
 
+  d1 = ultra();
+
 }
 
 
@@ -207,14 +206,18 @@ void loop()
       lcd.print(" mm    ");
   }
   
+  /*
+  if(cntrL > 100 || cntrR > 100){
+    d2 = measureUltra;
+    deltaWall = d2 - d1;
+
+
+    cntrL = 0;
+    cntrR = 0;
+  }
+  */
 
   /*  P- CONTROLL SYSTEM  */
-
-  wallError = measureUltra - targetDistance;
-
-  // This correction value determines how much to deviate from driving straight
-  int wallCorrection = int(wallError * wallGain);
-
   int RSPD = RSPD2;   // RIGHT AND LEFT SPEED VARIABLES CHANGE BASED ON P-CONTROLL AND CONSTANT SPEED VALUES
   int LSPD = LSPD2;   
   long tmpLcntr, tmpRcntr;    //snapshot of the cntrL and cntrR value
@@ -223,12 +226,26 @@ void loop()
   tmpRcntr = cntrR;
   interrupts();
   
-  int encoderError = tmpLcntr - tmpRcntr; 
-  int encoderAdjustment = encoderError * gain;
+  delCntr = abs(tmpLcntr - tmpRcntr);   // The error is wheel speed
 
   /*  Calculate speed (P-Controller)  */
-  LSPD = LSPD2 + wallCorrection - encoderAdjustment;
-  RSPD = RSPD2 - wallCorrection + encoderAdjustment;
+  if(tmpLcntr > tmpRcntr) // LEFT WHEEL IS SPINNING TOO FAST
+  {
+    RSPD = RSPD2; 
+    LSPD = max(LSPD2 - int(gain *  delCntr + 0.5),0);
+    /*  Adjusts using: LSPD - (gain * delCntr)
+          int(... + 0.5) is to round to the nearest whole number
+          max(... , 0) is to prevent the speed from going negative (max function returns highest value parameter) */
+  }
+  else if(tmpRcntr > tmpLcntr) // RIGHT WHEEL IS SPINNING TOO FAST
+  {
+    RSPD = max(RSPD2 - int(gain *  delCntr + 0.5),0); 
+    LSPD = LSPD2;
+  }
+
+
+  /*  In  */
+
 
 
 /* IR SENSOR CONTROL SYSTEM (FSM)*/
@@ -264,7 +281,7 @@ void loop()
 
       // 2 cases are right corner and no more wall
       
-      if(measureIR.RangeStatus != 4 && measureIR.RangeMilliMeter <=200 && measureUltra <= 200)
+      if(measureIR.RangeStatus != 4 && measureIR.RangeMilliMeter <=300 && measureUltra <= 400)
         {//corner right case -> needs to turn left
           state = 3;
           stop();
@@ -274,10 +291,10 @@ void loop()
           cntrR = 0;
           break;
         }
-      else if(measureUltra > 200)
+      else if(measureUltra > 400)
       {
+        delay(500);
         state = 4;
-          delay(1000);
           stop();
           delay(250);
 
@@ -309,26 +326,11 @@ void loop()
 
     case 3: //CORNER RIGHT PROTOCALL
     //LEFFT TURN
-        Lturn = true;
 
-        while(tmpRcntr < tmpLcntr + 30){
-          noInterrupts();
-          tmpLcntr = cntrL;
-          tmpRcntr = cntrR;
-          interrupts();
-
-          //turn right in place
-          digitalWrite(LWhFwdPin,LOW);    //left wheel bwd
-          digitalWrite(LWhBwdPin,HIGH);    
-
-          digitalWrite(RWhFwdPin,HIGH);    //right wheel fwd
-          digitalWrite(RWhBwdPin,LOW);    
-
-          analogWrite(RWhPWMPin,RSPD);
-          analogWrite(LWhPWMPin,LSPD);
+        while(cntrR < 40){
+          turnLeft();
         }
         stop();
-        Lturn = false;
         state = 1;
         cntrL = 0;
         cntrR = 0;
@@ -339,35 +341,34 @@ void loop()
 
     case 4: //right wall ends
     if(heading == 0){
+      while(cntrL < 40 && cntrR < 40)
+      {
+        moveFwd();
+      }
       state = 1;
       break;
     }
     else
     {   //RIGHT TURN
-      Rturn = true;
+      while(cntrL < 40)
+      {
+        turnRight();
+      }
 
-        while(tmpLcntr < tmpRcntr + 30){
-          noInterrupts();
-          tmpLcntr = cntrL;
-          tmpRcntr = cntrR;
-          interrupts();
+      cntrL = 0;
+      cntrR = 0;
 
-          //turn right in place
-          digitalWrite(LWhFwdPin,HIGH);    //left wheel forward
-          digitalWrite(LWhBwdPin,LOW);    
-
-          digitalWrite(RWhFwdPin,LOW);    //right wheel backward
-          digitalWrite(RWhBwdPin,HIGH);    
-
-          analogWrite(RWhPWMPin,130);
-          analogWrite(LWhPWMPin,130);
-        }
-        
+      while(cntrL < 40 && cntrR < 40)
+      {
+        moveFwd();
+      }
+      
         stop();
+
+      
         state = 1;
         cntrL = 0;
         cntrR = 0;
-        Rturn = false;
 
         heading = heading -1;
         break;
@@ -401,13 +402,8 @@ void leftWhlCnt()
   if(intTime > LIntTime + 1000L)
   {
     LIntTime = intTime;
-    if(Lturn){
-      cntrL--;    //left wheel turns back when turning left
-    }
-    else
-    {
-      cntrL++;
-    }
+     cntrL++;
+    
   }
 }
 
@@ -416,15 +412,7 @@ void rightWhlCnt()
   long intTime = micros();
   if(intTime > RIntTime + 1000L)
   {
-    RIntTime = intTime;
-    if(Rturn)    //right wheel turns back when turning right
-    {
-      cntrR--;
-    }
-    else
-    {
-      cntrR++;
-    }
+    cntrR++;
   }
 }
 
@@ -436,3 +424,31 @@ void stop()
       digitalWrite(RWhBwdPin,LOW); 
 }
 
+void turnRight()
+{
+      digitalWrite(LWhFwdPin,HIGH);    //soft turn right
+      digitalWrite(RWhFwdPin,LOW);   
+      digitalWrite(LWhBwdPin,LOW);    
+      digitalWrite(RWhBwdPin,LOW); 
+      analogWrite(LWhPWMPin,130);
+
+}
+
+void turnLeft()
+{
+      digitalWrite(LWhFwdPin,LOW);    //soft turn left
+      digitalWrite(RWhFwdPin,HIGH);   
+      digitalWrite(LWhBwdPin,LOW);    
+      digitalWrite(RWhBwdPin,LOW); 
+      analogWrite(RWhPWMPin,130);
+}
+
+void moveFwd()
+{
+      digitalWrite(LWhFwdPin,HIGH);    //soft turn left
+      digitalWrite(RWhFwdPin,HIGH);   
+      digitalWrite(LWhBwdPin,LOW);    
+      digitalWrite(RWhBwdPin,LOW); 
+      analogWrite(RWhPWMPin,130);
+      analogWrite(LWhPWMPin,130);
+}
