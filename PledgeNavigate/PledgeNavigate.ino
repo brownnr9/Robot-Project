@@ -51,8 +51,8 @@ Pin Map:
  //const int RSPD1 = 170;        //Right Wheel PWM
  //const int LSPD1 = 180;        //Left Wheel PWM
 
- const int RSPD2 = 160;        //Right Wheel PWM
- const int LSPD2 = 150;        //Left Wheel PWM
+ const int RSPD2 = 120;        //Right Wheel PWM
+ const int LSPD2 = 110;        //Left Wheel PWM
 
  int LSPD;
  int RSPD;
@@ -107,8 +107,8 @@ int pos = 90;    // variable to store the servo position
 /*  wall following variables  */
 
 long d1, d2;
-int ticksPerRTurn = 35;
-int ticksPerLTurn = 35;
+int ticksPerRTurn = 39;
+int ticksPerLTurn = 33;
 
 
 // ===== ULTRASONIC =====
@@ -125,6 +125,8 @@ long ultra() {
   long mm = cm*10;
 
   //if (cm <= 0 || cm > 500) return 500;
+
+
   return mm; 
 }
 
@@ -308,7 +310,7 @@ void loop()
         }
       else if(measureUltra > 400)
       {
-        delay(500);
+        delay(300);
         state = 4;
           stop();
           delay(250);
@@ -369,6 +371,7 @@ void loop()
     }
     else
     {   //RIGHT TURN
+
       while(cntrL < ticksPerRTurn)
       {
         turnRight();
@@ -378,9 +381,11 @@ void loop()
       cntrL = 0;
       cntrR = 0;
 
-      while(cntrL < 60 && cntrR < 60)
+      while(measureUltra>300)
       {
         moveFwd();
+        measureUltra = ultra();
+        delay(100);
       }
       
         stop();

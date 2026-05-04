@@ -2,8 +2,8 @@
 #include <LiquidCrystal_I2C.h>
 
 // 1. Adjust these until the robot does exactly 90 degrees
-int testTicksL = 35; 
-int testTicksR = 35; 
+int testTicksL = 33; 
+int testTicksR = 37; 
 
 // Motor Pins
 const int LWhFwdPin = 4;
@@ -49,7 +49,7 @@ void loop() {
   while(cntrR < testTicksL) {
     digitalWrite(LWhFwdPin, LOW);
     digitalWrite(RWhFwdPin, HIGH);
-    analogWrite(RWhPWMPin, 140); // Right motor moves for Left turn
+    analogWrite(RWhPWMPin, 104); // Right motor moves for Left turn
   }
   stopMotors();
   
@@ -67,7 +67,7 @@ void loop() {
   while(cntrL < testTicksR) {
     digitalWrite(LWhFwdPin, HIGH);
     digitalWrite(RWhFwdPin, LOW);
-    analogWrite(LWhPWMPin, 150); // Left motor moves for Right turn
+    analogWrite(LWhPWMPin, 100); // Left motor moves for Right turn
   }
   stopMotors();
   
